@@ -1,3 +1,6 @@
+#preview link - 
+http://localhost:5173/
+
 # Circuitship Studio
 
 Circuitship Studio is a self-contained webapp MVP for a "Vercel for hardware" workflow: describe an embedded/IoT project, select a board and components, then get a wiring plan, pin map, safety checks, generated firmware, and a simulated upload console.
