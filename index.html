@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Circuitship Studio</title>
-    <link rel="stylesheet" href="src/styles.css" />
+    <link rel="stylesheet" href="src/styles.css?v=4" />
   </head>
   <body>
     <main class="app-shell">
@@ -55,10 +55,22 @@
             </label>
           </div>
 
+          <div class="device-controls">
+            <button class="secondary-button" id="connect-board" type="button">Connect board</button>
+            <div class="mode-toggle" aria-label="Experience mode">
+              <button class="active" type="button" data-mode="beginner">Beginner</button>
+              <button type="button" data-mode="advanced">Advanced</button>
+            </div>
+          </div>
+
           <div class="component-section">
             <div class="section-title">
               <span>Component drawer</span>
               <span id="component-count">0 selected</span>
+            </div>
+            <div class="component-search">
+              <input id="component-search" type="search" placeholder="Search parts: OLED, servo, relay..." />
+              <div class="component-suggestions" id="component-suggestions"></div>
             </div>
             <div class="component-list" id="component-list"></div>
           </div>
@@ -101,9 +113,46 @@
               <span class="summary-label">libraries</span>
             </div>
           </div>
+          <div class="compatibility-card">
+            <div>
+              <span class="summary-label">board compatibility</span>
+              <strong id="compatibility-value">92%</strong>
+            </div>
+            <p id="compatibility-summary">Arduino Uno is a strong fit for this build.</p>
+            <div class="compatibility-reasons" id="compatibility-reasons"></div>
+          </div>
+          <div class="wiring-checklist">
+            <div class="section-title">
+              <span>Interactive wiring checklist</span>
+              <span id="checklist-progress">0/0 done</span>
+            </div>
+            <div id="wiring-checklist"></div>
+          </div>
         </section>
 
         <aside class="right-stack" aria-label="Generated output">
+          <section class="panel ai-panel" aria-label="AI hardware support">
+            <div class="panel-heading compact">
+              <div>
+                <p class="eyebrow">Assist</p>
+                <h2>Hardware AI Copilot</h2>
+              </div>
+              <span class="ai-badge">Context aware</span>
+            </div>
+            <div class="ai-response" id="ai-response" aria-live="polite">
+              Ask about wiring, firmware, pin choices, or safety risks and I will explain the next fix.
+            </div>
+            <div class="ai-quick-actions" aria-label="AI support shortcuts">
+              <button type="button" data-ai-question="Why is my upload blocked?">Explain blocker</button>
+              <button type="button" data-ai-question="How should I wire this safely?">Safe wiring</button>
+              <button type="button" data-ai-question="What should I test first?">First test</button>
+            </div>
+            <div class="ai-input-row">
+              <input id="ai-question" type="text" placeholder="Ask AI: why is my buzzer not working?" />
+              <button class="secondary-button" id="ask-ai-button" type="button">Ask AI</button>
+            </div>
+          </section>
+
           <section class="panel">
             <div class="panel-heading compact">
               <div>
@@ -147,6 +196,31 @@
             <pre><code id="firmware-code"></code></pre>
           </section>
 
+          <section class="panel debug-panel">
+            <div class="panel-heading compact">
+              <div>
+                <p class="eyebrow">Debug</p>
+                <h2>Serial log AI</h2>
+              </div>
+            </div>
+            <textarea id="serial-log-input" rows="4" placeholder="Paste serial logs here: sensor=0, timeout, avrdude error..."></textarea>
+            <button class="secondary-button" id="debug-logs-button" type="button">Analyze logs</button>
+          </section>
+
+          <section class="panel export-panel">
+            <div class="panel-heading compact">
+              <div>
+                <p class="eyebrow">Export</p>
+                <h2>Project files</h2>
+              </div>
+            </div>
+            <div class="export-grid">
+              <button type="button" data-export="firmware">Firmware</button>
+              <button type="button" data-export="checklist">Checklist</button>
+              <button type="button" data-export="project">Project JSON</button>
+            </div>
+          </section>
+
           <section class="panel console-panel">
             <div class="panel-heading compact">
               <div>
@@ -160,6 +234,6 @@
       </section>
     </main>
 
-    <script src="src/app.js"></script>
+    <script src="src/app.js?v=4"></script>
   </body>
 </html>

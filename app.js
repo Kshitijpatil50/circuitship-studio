@@ -183,11 +183,26 @@ const els = {
   pinUsed: document.querySelector("#pin-used"),
   powerRail: document.querySelector("#power-rail"),
   libraryCount: document.querySelector("#library-count"),
-  healthBadge: document.querySelector("#health-badge")
+  healthBadge: document.querySelector("#health-badge"),
+  aiResponse: document.querySelector("#ai-response"),
+  aiQuestion: document.querySelector("#ai-question"),
+  askAiButton: document.querySelector("#ask-ai-button"),
+  connectBoard: document.querySelector("#connect-board"),
+  componentSearch: document.querySelector("#component-search"),
+  componentSuggestions: document.querySelector("#component-suggestions"),
+  compatibilityValue: document.querySelector("#compatibility-value"),
+  compatibilitySummary: document.querySelector("#compatibility-summary"),
+  compatibilityReasons: document.querySelector("#compatibility-reasons"),
+  wiringChecklist: document.querySelector("#wiring-checklist"),
+  checklistProgress: document.querySelector("#checklist-progress"),
+  serialLogInput: document.querySelector("#serial-log-input"),
+  debugLogsButton: document.querySelector("#debug-logs-button")
 };
 
 let selected = new Set(["pir", "buzzer", "led"]);
 let currentBuild = null;
+let currentMode = "beginner";
+let connectedPortLabel = "";
 
 function init() {
   Object.entries(boards).forEach(([id, board]) => {
@@ -237,6 +252,94 @@ function attachEvents() {
       els.copyCode.textContent = "Copy";
     }, 1100);
   });
+
+  els.askAiButton.addEventListener("click", answerAiQuestion);
+  els.aiQuestion.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      answerAiQuestion();
+    }
+  });
+  document.querySelectorAll("[data-ai-question]").forEach((button) => {
+    button.addEventListener("click", () => {
+      els.aiQuestion.value = button.dataset.aiQuestion;
+      answerAiQuestion();
+    });
+  });
+
+  els.connectBoard.addEventListener("click", connectBoard);
+  els.componentSearch.addEventListener("input", renderComponentSuggestions);
+  els.debugLogsButton.addEventListener("click", analyzeSerialLogs);
+  document.querySelectorAll("[data-mode]").forEach((button) => {
+    button.addEventListener("click", () => {
+      currentMode = button.dataset.mode;
+      document.querySelectorAll("[data-mode]").forEach((item) => item.classList.toggle("active", item === button));
+      generateBuild();
+    });
+  });
+  document.querySelectorAll("[data-export]").forEach((button) => {
+    button.addEventListener("click", () => exportArtifact(button.dataset.export));
+  });
+}
+
+async function connectBoard() {
+  const board = boards[els.boardSelect.value];
+  els.connectBoard.textContent = "Connecting...";
+
+  if ("serial" in navigator && window.isSecureContext) {
+    try {
+      const port = await navigator.serial.requestPort();
+      connectedPortLabel = port.getInfo ? `USB device ${JSON.stringify(port.getInfo())}` : "Web Serial device";
+      els.detectedBoard.textContent = `Connected: ${board.name}`;
+      appendConsoleLine("ok", `Board connected through Web Serial as ${connectedPortLabel}`);
+      els.connectBoard.textContent = "Board connected";
+      return;
+    } catch (error) {
+      appendConsoleLine("warn", "Web Serial connection was cancelled or blocked");
+    }
+  }
+
+  connectedPortLabel = board.serial;
+  els.detectedBoard.textContent = `Simulated connection: ${board.name}`;
+  appendConsoleLine("ok", `Simulated board connection on ${board.serial}`);
+  els.connectBoard.textContent = "Simulated board";
+}
+
+function renderComponentSuggestions() {
+  const query = els.componentSearch.value.trim().toLowerCase();
+  if (!query) {
+    els.componentSuggestions.innerHTML = "";
+    return;
+  }
+
+  const matches = Object.entries(components)
+    .filter(([, part]) => {
+      const haystack = `${part.name} ${part.type} ${part.keywords.join(" ")} ${part.power}`.toLowerCase();
+      return haystack.includes(query);
+    })
+    .slice(0, 4);
+
+  els.componentSuggestions.innerHTML = matches.length
+    ? matches
+        .map(
+          ([id, part]) => `
+          <button type="button" data-add-component="${id}">
+            <strong>${part.name}</strong>
+            <span>${selected.has(id) ? "Selected" : `Add ${part.type}`}</span>
+          </button>
+        `
+        )
+        .join("")
+    : `<div class="empty-state">No matching part in this MVP library.</div>`;
+
+  els.componentSuggestions.querySelectorAll("[data-add-component]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selected.add(button.dataset.addComponent);
+      els.componentSearch.value = "";
+      els.componentSuggestions.innerHTML = "";
+      renderComponentList();
+      generateBuild();
+    });
+  });
 }
 
 function renderComponentList() {
@@ -284,10 +387,11 @@ function generateBuild() {
   const safety = buildSafetyChecks(board, selectedParts, assignments);
   const libraries = collectLibraries(board, selectedParts);
   const confidence = calculateConfidence(assignments, safety);
+  const compatibility = calculateCompatibility(board, selectedParts, assignments, safety, confidence);
 
-  currentBuild = { board, selectedParts, assignments, safety, libraries, confidence };
+  currentBuild = { board, selectedParts, assignments, safety, libraries, confidence, compatibility };
 
-  els.detectedBoard.textContent = `USB board detected: ${board.name}`;
+  els.detectedBoard.textContent = connectedPortLabel ? `Connected: ${board.name}` : `USB board detected: ${board.name}`;
   els.componentCount.textContent = `${selected.size} selected`;
   els.confidenceValue.textContent = `${confidence}%`;
   els.meterFill.style.width = `${confidence}%`;
@@ -300,11 +404,69 @@ function generateBuild() {
   renderPinTable(assignments);
   renderSafety(safety);
   renderFirmware(board, selectedParts, assignments, libraries);
+  renderCompatibility(compatibility);
+  renderWiringChecklist(board, selectedParts, assignments, safety);
+  renderAiSummary(board, selectedParts, assignments, safety);
   writeConsole([
     ["ok", `Detected ${board.name} on ${board.serial}`],
     ["ok", `Generated ${assignments.length} signal routes from project prompt`],
     ["warn", "Upload is simulated in this MVP; no device is flashed"]
   ]);
+}
+
+function renderAiSummary(board, parts, assignments, safety) {
+  const warnings = safety.filter((item) => item.level !== "ok");
+  const routed = assignments.filter((item) => item.pin).length;
+  const intro = `${board.name} plan: ${routed}/${assignments.length} signals routed across ${parts.length} parts.`;
+  const nextStep = warnings.length
+    ? `Start with "${warnings[0].title}" before upload.`
+    : "Next step: wire one component, open Serial Monitor, then test each signal.";
+
+  els.aiResponse.innerHTML = `
+    <strong>${intro}</strong>
+    <span>${nextStep}</span>
+  `;
+}
+
+function answerAiQuestion() {
+  if (!currentBuild) generateBuild();
+
+  const question = els.aiQuestion.value.trim().toLowerCase();
+  const { board, selectedParts, assignments, safety } = currentBuild;
+  const warnings = safety.filter((item) => item.level !== "ok");
+  const danger = safety.find((item) => item.level === "danger");
+  const firstAssignment = assignments.find((item) => item.pin);
+  let answer = "";
+
+  if (!question) {
+    answer = `Tell me what failed: upload, wiring, sensor readings, or code. I already know this build is using ${board.name} with ${selectedParts.length} selected parts.`;
+  } else if (question.includes("upload") || question.includes("block")) {
+    answer = danger
+      ? `Upload should stay blocked because ${danger.title.toLowerCase()}. Fix that hardware risk first, then regenerate and upload.`
+      : `This build is upload-ready in the MVP. If a real board fails, check USB cable, selected port, board package, and Serial baud rate.`;
+  } else if (question.includes("wire") || question.includes("safe") || question.includes("connect")) {
+    answer = firstAssignment
+      ? `Start with ${firstAssignment.part}: connect ${firstAssignment.signal} to ${firstAssignment.pin}, then connect ${board.voltage} and GND rails. Wire one module at a time and retest after each connection.`
+      : `No routed signal is available yet. Remove a component or choose a board with more compatible pins.`;
+  } else if (question.includes("test") || question.includes("first")) {
+    answer = `First test power and ground, then run firmware with only Serial prints. Confirm each input changes in logs before enabling outputs like buzzers, servos, or relays.`;
+  } else if (question.includes("buzzer")) {
+    const buzzer = assignments.find((item) => item.partId === "buzzer");
+    answer = buzzer
+      ? `The buzzer signal is on ${buzzer.pin}. Use a small passive buzzer for direct GPIO drive. If it is an active/high-current buzzer, add a transistor driver.`
+      : "Add the Piezo buzzer from the component drawer, then regenerate the build so I can assign a PWM-capable pin.";
+  } else if (question.includes("sensor") || question.includes("reading")) {
+    answer = `If readings look wrong, verify the sensor power rail matches ${board.voltage}, confirm the signal pin in the pin table, and print raw values before adding app logic.`;
+  } else {
+    answer = warnings.length
+      ? `Most important fix: ${warnings[0].title}. ${warnings[0].detail}`
+      : `This plan looks clean. Build it in stages: power rails first, one sensor next, then outputs, then upload the generated firmware.`;
+  }
+
+  els.aiResponse.innerHTML = `
+    <strong>AI support</strong>
+    <span>${answer}</span>
+  `;
 }
 
 function allocatePins(board, parts) {
@@ -398,6 +560,117 @@ function calculateConfidence(assignments, safety) {
   score -= safety.filter((item) => item.level === "danger").length * 12;
   score -= safety.filter((item) => item.level === "warn").length * 5;
   return Math.max(42, Math.min(99, score));
+}
+
+function calculateCompatibility(board, parts, assignments, safety, confidence) {
+  const reasons = [];
+  const missingRoutes = assignments.filter((item) => !item.pin).length;
+  const dangerCount = safety.filter((item) => item.level === "danger").length;
+  const warnCount = safety.filter((item) => item.level === "warn").length;
+  let score = confidence;
+
+  if (board.voltage === "3.3V" && parts.some((part) => part.id === "ultrasonic")) {
+    reasons.push("HC-SR04 echo needs level shifting on 3.3V boards.");
+  }
+  if (parts.some((part) => part.id === "servo")) {
+    reasons.push("Servo should use external 5V power with common ground.");
+  }
+  if (parts.some((part) => part.id === "oled") && !board.pins.some((pin) => pin.caps.includes("i2c"))) {
+    reasons.push("OLED needs I2C pins that this board profile does not expose.");
+    score -= 12;
+  }
+  if (missingRoutes) {
+    reasons.push(`${missingRoutes} signal${missingRoutes > 1 ? "s" : ""} could not be routed.`);
+  }
+  if (!reasons.length) {
+    reasons.push("All selected components have compatible pins in this board profile.");
+  }
+
+  score -= dangerCount * 4 + warnCount * 2;
+  score = Math.max(35, Math.min(99, score));
+
+  const label = score >= 88 ? "Strong fit" : score >= 72 ? "Usable with care" : "Needs changes";
+  return { score, label, reasons };
+}
+
+function renderCompatibility(compatibility) {
+  els.compatibilityValue.textContent = `${compatibility.score}%`;
+  els.compatibilitySummary.textContent = compatibility.label;
+  els.compatibilityReasons.innerHTML = compatibility.reasons.map((reason) => `<span>${reason}</span>`).join("");
+}
+
+function buildWiringSteps(board, parts, assignments, safety) {
+  const steps = [];
+  const byPart = new Map(parts.map((part) => [part.id, part]));
+
+  parts.forEach((part) => {
+    steps.push({
+      type: "power",
+      text: `Connect ${part.name} VCC to ${board.voltage} and GND to board ground.`
+    });
+  });
+
+  assignments.forEach((assignment) => {
+    if (!assignment.pin) {
+      steps.push({
+        type: "danger",
+        text: `Resolve missing route for ${assignment.part} ${assignment.signal}.`
+      });
+      return;
+    }
+    steps.push({
+      type: "signal",
+      text: `Connect ${assignment.part} ${assignment.signal} to ${assignment.pin}.`
+    });
+  });
+
+  safety
+    .filter((item) => item.level !== "ok")
+    .forEach((item) => {
+      steps.push({
+        type: item.level,
+        text: `${item.title}: ${item.detail}`
+      });
+    });
+
+  if (currentMode === "advanced") {
+    assignments.forEach((assignment) => {
+      const part = byPart.get(assignment.partId);
+      if (assignment.pin && part) {
+        steps.push({
+          type: "advanced",
+          text: `Advanced: ${assignment.pin} is used as ${assignment.cap.toUpperCase()} for ${part.name}; avoid sharing it with conflicting buses.`
+        });
+      }
+    });
+  }
+
+  return steps;
+}
+
+function renderWiringChecklist(board, parts, assignments, safety) {
+  const steps = buildWiringSteps(board, parts, assignments, safety);
+  els.checklistProgress.textContent = `0/${steps.length} done`;
+  els.wiringChecklist.innerHTML = steps
+    .map(
+      (step, index) => `
+      <label class="checklist-item ${step.type}">
+        <input type="checkbox" data-check-step="${index}" />
+        <span>${step.text}</span>
+      </label>
+    `
+    )
+    .join("");
+
+  els.wiringChecklist.querySelectorAll("[data-check-step]").forEach((checkbox) => {
+    checkbox.addEventListener("change", updateChecklistProgress);
+  });
+}
+
+function updateChecklistProgress() {
+  const checkboxes = Array.from(els.wiringChecklist.querySelectorAll("[data-check-step]"));
+  const done = checkboxes.filter((checkbox) => checkbox.checked).length;
+  els.checklistProgress.textContent = `${done}/${checkboxes.length} done`;
 }
 
 function renderDiagram(board, parts, assignments) {
@@ -694,6 +967,94 @@ function pythonPin(pin) {
   if (pin.startsWith("D")) return pin.replace("D", "");
   if (pin.startsWith("A")) return `"${pin}"`;
   return `"${pin}"`;
+}
+
+function analyzeSerialLogs() {
+  if (!currentBuild) generateBuild();
+  const log = els.serialLogInput.value.trim().toLowerCase();
+  const { board, assignments, safety } = currentBuild;
+  let answer = "";
+
+  if (!log) {
+    answer = "Paste a serial monitor log first. I can look for upload errors, timeout patterns, stuck sensor readings, resets, and missing board output.";
+  } else if (log.includes("avrdude") || log.includes("not in sync") || log.includes("permission")) {
+    answer = `This looks like an upload/port issue. Confirm ${board.name} is selected, close other serial monitors, reconnect USB, then retry upload.`;
+  } else if (log.includes("timeout") || log.includes("pulsein")) {
+    const ultrasonic = assignments.find((item) => item.partId === "ultrasonic");
+    answer = ultrasonic
+      ? `Timeout points at the ultrasonic wiring. Recheck TRIG/ECHO pins in the map and verify echo voltage safety before retesting.`
+      : "Timeout usually means the code is waiting for a sensor response. Check the signal pin, power rail, and sensor ground.";
+  } else if (log.includes("nan") || log.includes("null")) {
+    answer = "NaN/null readings usually mean the sensor library cannot read valid data. Check power, data pin, pull-up requirements, and library choice.";
+  } else if (log.match(/(^|\\D)0(\\D|$)/) || log.includes("always low")) {
+    answer = "A constant zero/LOW reading usually means the signal pin is floating, connected to ground, or mapped to the wrong pin.";
+  } else if (log.includes("rst") || log.includes("brownout") || log.includes("reset")) {
+    answer = "Reset/brownout logs point to power instability. Disconnect high-current outputs, power servos separately, and connect grounds together.";
+  } else {
+    const warning = safety.find((item) => item.level !== "ok");
+    answer = warning
+      ? `I do not see a known log pattern, but your build still has this hardware risk: ${warning.title}. ${warning.detail}`
+      : "Logs look structurally normal. Add raw sensor prints one at a time so we can isolate the first failing signal.";
+  }
+
+  els.aiResponse.innerHTML = `
+    <strong>Serial log AI</strong>
+    <span>${answer}</span>
+  `;
+  appendConsoleLine("ok", "Serial logs analyzed by Hardware AI Copilot");
+}
+
+function exportArtifact(type) {
+  if (!currentBuild) generateBuild();
+  const { board, selectedParts, assignments, safety, libraries, compatibility } = currentBuild;
+  let filename = "circuitship-export.txt";
+  let mime = "text/plain";
+  let content = "";
+
+  if (type === "firmware") {
+    filename = els.languageSelect.value === "python" ? "circuitship-main.py" : "circuitship-firmware.ino";
+    content = els.firmwareCode.textContent;
+  } else if (type === "checklist") {
+    filename = "circuitship-wiring-checklist.md";
+    content = [
+      `# ${board.name} Wiring Checklist`,
+      "",
+      ...buildWiringSteps(board, selectedParts, assignments, safety).map((step) => `- [ ] ${step.text}`)
+    ].join("\n");
+  } else {
+    filename = "circuitship-project.json";
+    mime = "application/json";
+    content = JSON.stringify(
+      {
+        prompt: els.prompt.value,
+        mode: currentMode,
+        board: board.name,
+        firmware: els.languageSelect.value,
+        components: selectedParts.map((part) => part.name),
+        assignments,
+        safety,
+        libraries,
+        compatibility
+      },
+      null,
+      2
+    );
+  }
+
+  downloadText(filename, content, mime);
+  appendConsoleLine("ok", `Exported ${filename}`);
+}
+
+function downloadText(filename, content, mime = "text/plain") {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 function uploadFirmware() {

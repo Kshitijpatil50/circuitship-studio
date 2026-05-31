@@ -143,6 +143,10 @@ h2 {
   padding: 16px;
 }
 
+.input-panel {
+  container-type: inline-size;
+}
+
 .right-stack {
   display: grid;
   gap: 14px;
@@ -694,6 +698,314 @@ pre {
   stroke: #6f8798;
 }
 
+.ai-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.ai-badge {
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: rgba(91, 140, 255, 0.14);
+  color: #9dbaff;
+  font-size: 0.75rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.ai-response {
+  min-height: 86px;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 11px;
+  border: 1px solid #314858;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(91, 140, 255, 0.12), rgba(53, 208, 194, 0.08));
+  color: #dceaf4;
+  font-size: 0.82rem;
+  line-height: 1.42;
+}
+
+.ai-response strong {
+  color: #ffffff;
+  font-size: 0.86rem;
+}
+
+.ai-response span {
+  color: #b7c8d5;
+}
+
+.ai-quick-actions,
+.ai-input-row {
+  display: grid;
+  gap: 8px;
+}
+
+.ai-quick-actions {
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+}
+
+.ai-quick-actions button {
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #101923;
+  color: #e6f0f7;
+  font-size: 0.78rem;
+  font-weight: 760;
+}
+
+.ai-input-row {
+  grid-template-columns: minmax(0, 1fr) minmax(82px, auto);
+}
+
+.ai-input-row input {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  border: 1px solid #304555;
+  border-radius: 8px;
+  background: #0b131a;
+  color: var(--ink);
+  padding: 0 11px;
+  outline: none;
+}
+
+.ai-input-row input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(91, 140, 255, 0.16);
+}
+
+.device-controls {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) minmax(172px, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #0b131a;
+}
+
+.mode-toggle button {
+  min-height: 32px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 820;
+}
+
+.mode-toggle button.active {
+  background: rgba(91, 140, 255, 0.18);
+  color: #dce8ff;
+}
+
+.component-search {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.component-search input {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #304555;
+  border-radius: 8px;
+  background: #0b131a;
+  color: var(--ink);
+  padding: 0 11px;
+  outline: none;
+}
+
+.component-search input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(91, 140, 255, 0.16);
+}
+
+.component-suggestions {
+  display: grid;
+  gap: 6px;
+}
+
+.component-suggestions button,
+.export-grid button {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #101923;
+  color: #e6f0f7;
+  font-weight: 780;
+}
+
+.component-suggestions button {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 9px;
+  text-align: left;
+}
+
+.component-suggestions button span {
+  color: var(--teal);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.empty-state {
+  padding: 9px;
+  border: 1px dashed #365164;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.compatibility-card,
+.wiring-checklist {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #0d151d;
+  padding: 12px;
+}
+
+.compatibility-card {
+  display: grid;
+  gap: 8px;
+}
+
+.compatibility-card > div:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.compatibility-card strong {
+  color: var(--green);
+  font-size: 1.25rem;
+}
+
+.compatibility-card p {
+  margin: 0;
+  color: #dceaf4;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.compatibility-reasons {
+  display: grid;
+  gap: 6px;
+}
+
+.compatibility-reasons span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+#wiring-checklist {
+  display: grid;
+  gap: 8px;
+  max-height: 230px;
+  overflow: auto;
+}
+
+.checklist-item {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 8px;
+  align-items: start;
+  padding: 8px;
+  border: 1px solid #243544;
+  border-radius: 8px;
+  background: #101923;
+  color: #dceaf4;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.checklist-item input {
+  margin-top: 2px;
+  accent-color: var(--green);
+}
+
+.checklist-item.warn {
+  border-color: rgba(244, 184, 74, 0.45);
+}
+
+.checklist-item.danger {
+  border-color: rgba(255, 107, 100, 0.5);
+}
+
+.checklist-item.advanced {
+  border-color: rgba(183, 148, 255, 0.48);
+}
+
+.debug-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.debug-panel textarea {
+  min-height: 96px;
+}
+
+.export-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.quick-prompts,
+.button-row {
+  display: grid;
+  width: 100%;
+}
+
+.quick-prompts {
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+}
+
+.button-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.quick-prompts button,
+.icon-button,
+.secondary-button,
+.primary-button {
+  width: 100%;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.15;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.primary-button,
+.secondary-button {
+  min-height: 42px;
+  padding: 0 12px;
+}
+
+.panel-heading .icon-button {
+  width: auto;
+  flex: 0 0 auto;
+}
+
 @media (max-width: 1400px) {
   .workspace {
     grid-template-columns: 340px 1fr;
@@ -702,6 +1014,17 @@ pre {
   .right-stack {
     grid-column: 1 / -1;
     grid-template-columns: repeat(2, minmax(280px, 1fr));
+  }
+}
+
+@container (max-width: 360px) {
+  .button-row {
+    grid-template-columns: 1fr;
+  }
+
+  .primary-button,
+  .secondary-button {
+    min-height: 44px;
   }
 }
 
@@ -732,5 +1055,34 @@ pre {
   .diagram-stage,
   #wiring-svg {
     min-height: 430px;
+  }
+}
+
+@media (max-width: 460px) {
+  .app-shell {
+    width: min(100% - 14px, 760px);
+  }
+
+  .input-panel,
+  .diagram-panel,
+  .right-stack .panel {
+    padding: 12px;
+  }
+
+  .quick-prompts,
+  .button-row,
+  .ai-input-row,
+  .device-controls,
+  .export-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-heading {
+    align-items: flex-start;
+  }
+
+  .panel-heading .icon-button {
+    min-width: 56px;
+    max-width: 96px;
   }
 }
