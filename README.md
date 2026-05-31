@@ -1,3 +1,5 @@
+localhost link - http://localhost:3000/
+
 # Circuitship Studio
 
 Circuitship Studio is an AI-assisted hardware IDE MVP for embedded and IoT projects. It is designed around a simple idea: hardware prototyping should feel as fast and guided as modern web development.
